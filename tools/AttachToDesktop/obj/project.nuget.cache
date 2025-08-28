@@ -1,0 +1,13 @@
+{
+  "version": 2,
+  "dgSpecHash": "kZmd99rgPstw33C1X9BO0DfBP51zSgSMw/tV/VoliP8o+qSmfcHu4K0RZZhkTiYtp65u4AsHUBz+BSP4lyNGJQ==",
+  "success": true,
+  "projectFilePath": "C:\\Users\\Saku\\OneDrive\\Bureau\\wallpaper engine\\tools\\AttachToDesktop\\AttachToDesktop.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\Saku\\.nuget\\packages\\microsoft.netcore.app.ref\\6.0.31\\microsoft.netcore.app.ref.6.0.31.nupkg.sha512",
+    "C:\\Users\\Saku\\.nuget\\packages\\microsoft.windowsdesktop.app.ref\\6.0.31\\microsoft.windowsdesktop.app.ref.6.0.31.nupkg.sha512",
+    "C:\\Users\\Saku\\.nuget\\packages\\microsoft.aspnetcore.app.ref\\6.0.31\\microsoft.aspnetcore.app.ref.6.0.31.nupkg.sha512",
+    "C:\\Users\\Saku\\.nuget\\packages\\microsoft.netcore.app.host.win-x64\\6.0.31\\microsoft.netcore.app.host.win-x64.6.0.31.nupkg.sha512"
+  ],
+  "logs": []
+}
