@@ -36,6 +36,88 @@ import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 
+// Auto-updater (optional)
+let autoUpdater = null
+let updateIntervalHandle = null
+try {
+  // require here to avoid bundling issues in environments where it's not needed
+  // electron-updater is present in package.json, but require safely
+  // eslint-disable-next-line global-require
+  const updater = require('electron-updater')
+  autoUpdater = updater && updater.autoUpdater ? updater.autoUpdater : null
+  if (autoUpdater) {
+    try {
+      autoUpdater.autoDownload = true
+    } catch {
+      /* ignore */
+    }
+  }
+} catch (e) {
+  console.debug('electron-updater not available')
+}
+
+// Auto-update helpers
+function startAutoUpdatePolling(intervalMs = 60 * 1000) {
+  try {
+    if (!autoUpdater) return
+    console.log('autoUpdater: checking for updates (initial)')
+    autoUpdater.checkForUpdates().catch(() => {})
+    // set interval
+    if (updateIntervalHandle) clearInterval(updateIntervalHandle)
+    updateIntervalHandle = setInterval(() => {
+      try {
+        console.log('autoUpdater: periodic check for updates')
+        autoUpdater.checkForUpdates().catch(() => {})
+      } catch {
+        /* ignore */
+      }
+    }, intervalMs)
+  } catch {
+    console.debug('startAutoUpdatePolling failed')
+  }
+}
+
+function stopAutoUpdatePolling() {
+  try {
+    if (updateIntervalHandle) {
+      clearInterval(updateIntervalHandle)
+      updateIntervalHandle = null
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
+if (autoUpdater) {
+  // listen for update events
+  autoUpdater.on('error', (err) => console.error('autoUpdater error', err))
+  autoUpdater.on('update-available', (info) => console.log('autoUpdater: update-available', info))
+  autoUpdater.on('update-not-available', (info) =>
+    console.log('autoUpdater: update-not-available', info)
+  )
+  autoUpdater.on('download-progress', (progress) =>
+    console.log('autoUpdater: download-progress', progress && progress.percent)
+  )
+  autoUpdater.on('update-downloaded', (info) => {
+    try {
+      console.log('autoUpdater: update-downloaded, will quit and install now')
+      // quit and install automatically
+      try {
+        autoUpdater.quitAndInstall()
+      } catch {
+        try {
+          // fallback for some versions
+          autoUpdater.quitAndInstall(true, true)
+        } catch {
+          console.error('autoUpdater.quitAndInstall failed')
+        }
+      }
+    } catch {
+      console.error('update-downloaded handler failed')
+    }
+  })
+}
+
 function createWindow() {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
@@ -101,13 +183,13 @@ function createWindow() {
         const y = display.bounds.y + 8
         mainWindow.setPosition(x, y)
       }
-    } catch (e) {
-      console.error('fit-content resize failed', e)
+    } catch (err) {
+      console.error('fit-content resize failed', err)
     }
     try {
       mainWindow.show()
-    } catch (e) {
-      console.error(e)
+    } catch (err) {
+      console.error('mainWindow.show failed', err)
     }
     // Try to attach the main window to the desktop (behind other windows)
     try {
@@ -120,8 +202,8 @@ function createWindow() {
           'attachWindowToDesktop: no helper available for main window; window will remain normal (not forced behind).'
         )
       }
-    } catch (e) {
-      console.error('attachWindowToDesktop call failed for main window', e)
+    } catch (err) {
+      console.error('attachWindowToDesktop call failed for main window', err)
     }
   })
 
@@ -398,6 +480,13 @@ app.whenReady().then(async () => {
       return null
     }
   })
+
+  // Start auto-update polling if available
+  try {
+    if (autoUpdater) startAutoUpdatePolling(60 * 1000)
+  } catch {
+    /* ignore */
+  }
 
   // Open a file/application by path
   ipcMain.handle('open-app', async (event, filePath) => {
@@ -718,6 +807,15 @@ app.whenReady().then(async () => {
     // dock icon is clicked and there are no other windows open.
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })
+})
+
+// Cleanup on quit
+app.on('before-quit', () => {
+  try {
+    stopAutoUpdatePolling()
+  } catch {
+    /* ignore */
+  }
 })
 
 // Quit when all windows are closed, except on macOS. There, it's common

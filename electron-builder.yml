@@ -1,5 +1,5 @@
-appId: com.electron.app
-productName: wallpaper
+appId: com.xdock
+productName: XDock
 directories:
   buildResources: build
 files:
@@ -11,7 +11,7 @@ files:
 asarUnpack:
   - resources/**
 win:
-  executableName: wallpaper
+  executableName: xdock
 nsis:
   artifactName: ${name}-${version}-setup.${ext}
   shortcutName: ${productName}
@@ -38,5 +38,6 @@ appImage:
   artifactName: ${name}-${version}.${ext}
 npmRebuild: false
 publish:
-  provider: generic
-  url: https://example.com/auto-updates
+  provider: github
+  owner: drissbenadjal
+  repo: XDock
