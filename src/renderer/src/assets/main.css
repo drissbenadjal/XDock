@@ -1,49 +1,22 @@
 @import './base.css';
 
-body {
+.custom-titlebar {
+  height: 40px;
   display: flex;
   align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  /* make background transparent for borderless window */
-  background: transparent;
-  user-select: none;
+  justify-content: space-between; /* title left, controls right */
+  padding: 6px 12px;
+  /* subtle top bar background to match card and hide visual seams */
+  background: rgba(6,8,10,0.35); /* match sidebar background */
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.02);
+  -webkit-app-region: drag;
 }
 
-code {
-  font-weight: 600;
-  padding: 3px 5px;
-  border-radius: 2px;
-  background-color: var(--color-background-mute);
-  font-family:
-    ui-monospace,
-    SFMono-Regular,
-    SF Mono,
-    Menlo,
-    Consolas,
-    Liberation Mono,
-    monospace;
-  font-size: 85%;
-}
+.custom-titlebar .title { font-weight: 700; color: #e6eefc; -webkit-app-region: drag; margin-left: 8px }
 
-#root {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  margin-bottom: 120px;
-}
-
-.app-root {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
-}
-
-/* draggable area so user can drag the borderless window */
+.custom-titlebar .controls button { -webkit-app-region: no-drag; }
 .dragbar {
   -webkit-app-region: drag;
   width: 100%;
@@ -57,6 +30,10 @@ code {
 .dock,
 .dock * {
   -webkit-app-region: no-drag;
+  /* prevent users from accidentally selecting dock text/icons */
+  -webkit-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
 }
 
 .dock-wrap {
@@ -65,7 +42,9 @@ code {
   justify-content: center;
   pointer-events: auto;
   position: fixed;
-  top: 10px;
+  /* vertical placement is controlled by main process; keep default at 0 so
+     main sets precise y when calling setPosition */
+  top: 0;
   left: 50%;
   transform: translateX(-50%);
   z-index: 9999;
@@ -73,6 +52,7 @@ code {
 .dock {
   position: relative;
   display: flex;
+  align-items: center;
   gap: 12px;
   list-style: none;
   margin: 0;
@@ -81,6 +61,11 @@ code {
   border-radius: 20px;
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+/* when the add-button is hidden we remove the right padding reserved for it */
+.dock.no-add {
+  padding-right: 12px; /* match left padding */
 }
 .dock-item {
   width: 72px;
@@ -127,8 +112,8 @@ code {
   top: 80px;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(5, 5, 8, 0.8);
-  color: #e6eefc;
+  width: 72px;
+  height: auto; /* explicit auto so items don't stretch to container height */
   padding: 8px 12px;
   border-radius: 8px;
   font-size: 13px;
@@ -195,6 +180,252 @@ code {
   font-weight: 600;
 }
 
+/* Settings specific styles */
+.settings-shell {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  background: #0b0c0f;
+  color: #e6eefc;
+  font-family:
+    Inter,
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    'Helvetica Neue',
+    Arial;
+  box-sizing: border-box;
+}
+.settings-main {
+  flex: 1;
+  display: flex;
+  padding: 22px;
+  background: transparent; /* window background transparent */
+  box-sizing: border-box;
+}
+.settings-sidebar {
+  width: 240px;
+}
+.settings-sidebar .title-small {
+  color: #9aa4b2;
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+.settings-nav {
+  background: #0f1113;
+  border-radius: 8px;
+  padding: 8px;
+}
+.settings-nav .nav-item {
+  padding: 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #b7c0c8;
+  margin-bottom: 6px;
+}
+.settings-nav .nav-item.active {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.02);
+}
+.settings-center {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+}
+
+/* make all primary text in the settings center white for high contrast */
+.settings-center,
+.settings-center .center-title,
+.settings-center .setting-label,
+.settings-center .center-sub,
+.settings-center .setting-desc,
+.settings-center .panel-empty,
+.settings-center .select-btn,
+.settings-center .input,
+.settings-center .input-range {
+  color: #ffffff !important;
+}
+.center-header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.center-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #e6eefc;
+}
+.center-title { margin-left: 0 }
+.center-sub {
+  color: #9aa4b2;
+  font-size: 13px;
+}
+.settings-actions {
+  /* action buttons under title */
+  margin-top: 12px;
+  display: flex;
+  gap: 8px;
+}
+.btn {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.03);
+  color: #e6eefc;
+  cursor: pointer;
+  background: transparent; /* transparent dock so only icons and toast show */
+}
+.btn.primary {
+  background: #2b6fff;
+  border-color: #2b6fff;
+  color: #fff;
+}
+.btn.danger {
+  background: #e04545;
+  border: none;
+  color: #fff;
+}
+.settings-card {
+  width: 900px;
+  height: 650px;
+  background: transparent; /* remove opaque card background so desktop shows through */
+  /* backdrop-filter: blur(18px); */
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  margin-top: 0; /* ensure card starts at top of wrapper */
+  position: relative; /* needed for overlay pseudo-element */
+}
+
+/* translucent overlay to make backdrop-filter visible and give a frosted glass tint */
+.settings-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(6,8,10,0.42);
+  /* backdrop-filter: blur(28px); */
+  /* -webkit-backdrop-filter: blur(28px); */
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ensure card children are above the overlay */
+.settings-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.settings-body {
+  display: flex;
+  flex: 1;
+  flex-direction: row;
+  height: calc(40px - 100%);
+}
+/* allow flex children to shrink properly and host their own scrollbarsf */
+.settings-body, .settings-card, .settings-center { min-width: 0; }
+.custom-titlebar .title {
+  font-weight: 700;
+  color: #e6eefc;
+  margin-right: auto;
+}
+.custom-titlebar .controls {
+  display: flex;
+  gap: 8px;
+}
+.custom-titlebar .controls button {
+  -webkit-app-region: no-drag;
+  padding: 4px 6px;
+  border-radius: 6px;
+  border: 1px solid rgba(255,255,255,0.04);
+  background: rgba(255,255,255,0.02);
+  color: #e6eefc;
+  cursor: pointer;
+  height: 28px;
+  min-width: 28px;
+}
+.custom-titlebar .controls button.close {
+  background: #fee2e2;
+  color: #b91c1c;
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(185,28,28,0.06);
+  font-weight: 700;
+}
+
+.panel-card {
+  background: transparent; /* transparent inner panels */
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  padding: 18px;
+  border-radius: 10px;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  box-sizing: border-box;
+}
+.form-row {
+  margin-bottom: 16px;
+}
+.label-strong {
+  display: block;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: #e6eefc;
+}
+.muted {
+  color: #9aa4b2;
+}
+.apps-list .app-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.01);
+  margin-bottom: 8px;
+}
+.app-meta {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.app-thumb {
+  width: 40px;
+  height: 40px;
+  background: #0b0c0f;
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #9aa4b2;
+}
+.app-actions button {
+  margin-left: 8px;
+}
+.input,
+.input-range {
+  background: #0b0c0f;
+  color: #e6eefc;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  padding: 8px 10px;
+}
+.input-range {
+  width: 200px;
+}
+.small {
+  font-size: 12px;
+}
+
 .react {
   background: -webkit-linear-gradient(315deg, #087ea4 55%, #7c93ee);
   background-clip: text;
@@ -250,7 +481,7 @@ code {
   align-items: center;
   border-radius: 22px;
   background-color: rgba(8, 9, 12, 0.7);
-  backdrop-filter: blur(18px);
+  /* backdrop-filter: blur(18px); */
   border: 1px solid rgba(255, 255, 255, 0.03);
 }
 
@@ -284,4 +515,345 @@ code {
   .actions {
     display: none;
   }
+}
+
+/* Light card settings (reference) */
+.settings-wrapper {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: flex-start; /* align card to top so titlebar is flush with window */
+  justify-content: center;
+  background: transparent;
+  padding: 0; /* removed vertical padding so titlebar touches top */
+  box-sizing: border-box;
+}
+.settings-card {
+  width: 900px;
+  height: 650px;
+  background: rgba(25, 25, 26, 0.98);
+  /* backdrop-filter: blur(18px); */
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.settings-body {
+  display: flex;
+  flex: 1;
+  flex-direction: row;
+}
+.settings-left {
+  padding: 16px 20px;
+  background: rgba(6,8,10,0.35);
+  border-right: 1px solid rgba(255,255,255,0.04);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start; /* keep nav at the top */
+  align-items: flex-start; /* ensure items are aligned to left */
+  /* keep sidebar fixed and allow its own scrolling instead of stretching the card */
+  flex: 0 0 240px;
+  max-width: 240px;
+  min-width: 0;
+  overflow: auto;
+  position: relative;
+}
+
+/* subtle frosted overlay for the sidebar to accentuate blur */
+.settings-left::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  background: rgba(6,8,10,0.28);
+  /* backdrop-filter: blur(14px); */
+  /* -webkit-backdrop-filter: blur(14px); */
+  border-top-left-radius: 12px;
+  border-bottom-left-radius: 12px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.settings-left > * { position: relative; z-index: 1 }
+
+/* footer area at bottom of sidebar */
+.left-footer {
+  margin-top: auto; /* push to bottom */
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: 12px 0 8px 0;
+}
+
+.reset-btn {
+  width: calc(100% - 24px);
+  max-width: 200px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.06);
+  background: transparent;
+  color: #ff7b7b; /* distinct warmer color */
+  cursor: pointer;
+}
+.reset-btn:hover {
+  background: rgba(255, 123, 123, 0.06);
+}
+
+/* ensure nav list and items span the full sidebar width */
+.nav-list {
+  width: 100%;
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+}
+.nav-item-light {
+  width: 100%;
+  box-sizing: border-box;
+  display: flex; /* keep flex layout for icon + label */
+  align-items: center;
+}
+.nav-item-light .nav-icon { flex-shrink: 0 }
+/* layout: titlebar top, body row (sidebar + center) */
+.custom-titlebar {
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end; /* center controls horizontally */
+  padding: 6px 12px;
+  /* subtle top bar background to match card and hide visual seams */
+  background: rgba(6,8,10,0.35); /* match sidebar background */
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.02);
+  -webkit-app-region: drag;
+  position: relative;
+  top: 0; /* force to top of card */
+}
+
+.custom-titlebar .controls button {
+  -webkit-app-region: no-drag;
+}
+.left-title { color: #d1d7de; font-weight:600; margin-bottom:12px; font-size:13px }
+.nav-list { display:flex; flex-direction:column; gap:8px }
+.nav-item-light {
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:10px 12px 10px 20px; /* leave room for the thin indicator */
+  border-radius:8px;
+  cursor:pointer;
+  color: #9aa4b2; /* muted by default */
+  font-weight:600;
+  transition: background .12s ease, color .12s ease;
+  position: relative; /* needed for ::before indicator */
+}
+.nav-item-light:hover {
+  background: rgba(255,255,255,0.03);
+  color: #e6eefc;
+}
+.nav-item-light .nav-icon {
+  width:36px;
+  height:36px;
+  border-radius:8px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.04);
+  color: #9aa4b2;
+  font-size:18px;
+}
+.nav-item-light::before {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 36px;
+  border-radius: 4px;
+  background: transparent;
+  transition: background .15s ease, transform .15s ease, box-shadow .15s ease;
+}
+
+.nav-item-light.active {
+  background: rgba(255,255,255,0.02); /* subtle lift */
+  color: #e6eefc;
+}
+
+.nav-item-light.active::before {
+  background: #2b6fff; /* accent */
+  box-shadow: 0 4px 12px rgba(43,111,255,0.18);
+}
+
+.nav-item-light.active .nav-icon {
+  color: #e6eefc;
+  border-color: rgba(255,255,255,0.06);
+}
+
+.settings-left {
+  /* kept for legacy selectors: ensure it stays a fixed column */
+  width: 240px;
+}
+
+.settings-center {
+  padding: 20px 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  overflow: auto;
+  flex: 1 1 auto;
+  min-width: 0; /* important so long content doesn't force the whole layout wider */
+}
+.center-header { font-size:20px; color:#e6eefc; font-weight:700; margin-bottom:6px }
+.center-sub { color:#9aa4b2; font-size:13px; margin-bottom:18px }
+.settings-list { background: transparent; border-radius: 8px; padding: 8px 0; margin-top: 0; padding-right: 5px; }
+.setting-row {
+  display:flex; align-items:center; justify-content:space-between; padding:18px 0px; border-bottom:1px solid rgba(255,255,255,0.03);
+}
+.setting-label { color:#e6eefc; font-weight:600 }
+.setting-desc { color:#9aa4b2; font-size:13px }
+.control-right { display:flex; align-items:center; gap:12px }
+
+.toggle {
+  width:44px; height:24px; background: #e6e7ee; border-radius: 999px; position:relative; cursor:pointer; border:1px solid rgba(16,24,40,0.04)
+}
+.toggle .knob { width:18px; height:18px; background:#fff; border-radius:50%; position:absolute; top:50%; transform:translateY(-50%); left:4px; transition: left .18s ease }
+.toggle.on { background:#0b74ff; }
+.toggle.on .knob { left:22px }
+
+/* hover affordance for toggles */
+.toggle { transition: box-shadow .12s ease, background .12s ease; }
+.toggle:hover { box-shadow: 0 6px 18px rgba(2,6,23,0.12); }
+
+
+.select-btn {
+  padding:10px 16px; border-radius:12px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.04); color:#e6eefc; cursor:pointer
+}
+
+/* subtle lift and highlight on hover for primary controls */
+.select-btn, .btn, .reset-btn, .delete-btn { transition: transform .12s ease, box-shadow .12s ease, background .12s ease; }
+.select-btn:hover { transform: translateY(-3px); box-shadow: 0 10px 24px rgba(2,6,23,0.12); background: rgba(255,255,255,0.06); }
+.select-btn.primary:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(43,111,255,0.12); background: #2557e6; border-color: #2557e6; }
+
+
+.settings-right {
+  padding: 28px;
+  border-left: 1px solid rgba(255,255,255,0.04);
+  /* make right-hand column a fixed-width panel with its own scrollbar */
+  flex: 0 0 340px;
+  max-width: 420px;
+  min-width: 0;
+  overflow: auto;
+}
+.panel-empty { color:#9aa4b2 }
+
+/* app list tweaks */
+.app-name {
+  color: #e6eefc;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.app-path {
+  color: #9aa4b2;
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 420px;
+}
+.delete-btn {
+  background: transparent;
+  color: #ff7b7b;
+  border: 1px solid rgba(255,255,255,0.06);
+  padding: 8px 12px;
+  border-radius: 8px;
+}
+.delete-btn:hover {
+  background: rgba(255, 123, 123, 0.06);
+}
+
+/* hover on app rows: lift and subtle background */
+.apps-list .app-row { transition: background .12s ease, transform .12s ease; }
+.apps-list .app-row:hover { background: rgba(255,255,255,0.02); transform: translateY(-3px); }
+
+/* app thumb hover: slight scale and shadow to indicate interactivity */
+.app-thumb { transition: transform .12s ease, box-shadow .12s ease; }
+.app-thumb:hover { transform: scale(1.04); box-shadow: 0 8px 20px rgba(2,6,23,0.12); }
+
+/* titlebar control hover */
+.custom-titlebar .controls button { transition: transform .12s ease, box-shadow .12s ease; }
+.custom-titlebar .controls button:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(2,6,23,0.08); }
+
+/* Custom scrollbars for dark theme panels */
+/* Firefox */
+.apps-list,
+.settings-center,
+.panel-card,
+.settings-right {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.08) transparent;
+}
+
+/* Webkit (Chrome, Edge, Electron) */
+.apps-list::-webkit-scrollbar,
+.settings-center::-webkit-scrollbar,
+.panel-card::-webkit-scrollbar,
+.settings-right::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+.apps-list::-webkit-scrollbar-track,
+.settings-center::-webkit-scrollbar-track,
+.panel-card::-webkit-scrollbar-track,
+.settings-right::-webkit-scrollbar-track {
+  background: transparent;
+}
+.apps-list::-webkit-scrollbar-thumb,
+.settings-center::-webkit-scrollbar-thumb,
+.panel-card::-webkit-scrollbar-thumb,
+.settings-right::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.06);
+  border-radius: 8px;
+  border: 2px solid transparent; /* gives padding effect */
+  background-clip: content-box;
+}
+.apps-list::-webkit-scrollbar-thumb:hover,
+.settings-center::-webkit-scrollbar-thumb:hover,
+.panel-card::-webkit-scrollbar-thumb:hover,
+.settings-right::-webkit-scrollbar-thumb:hover {
+  background: rgba(255,255,255,0.12);
+}
+
+/* small corner when both scrolls present */
+.apps-list::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* force center column content to start top-left */
+.settings-center {
+  align-items: flex-start !important;
+  justify-content: flex-start !important;
+}
+.settings-center .settings-list {
+  align-self: stretch !important;
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+
+/* ensure the list of settings grows and scrolls inside the center column */
+.settings-list {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  overflow: auto;
+  min-width: 0; /* prevent content from forcing width */
 }

@@ -13,11 +13,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\Saku\\OneDrive\\Bureau\\wallpaper engine\\tools\\AttachToDesktop\\AttachToDesktop.csproj",
+      "projectUniqueName": "C:\\Users\\Saku\\OneDrive\\Bureau\\xdock\\tools\\AttachToDesktop\\AttachToDesktop.csproj",
       "projectName": "AttachToDesktop",
-      "projectPath": "C:\\Users\\Saku\\OneDrive\\Bureau\\wallpaper engine\\tools\\AttachToDesktop\\AttachToDesktop.csproj",
+      "projectPath": "C:\\Users\\Saku\\OneDrive\\Bureau\\xdock\\tools\\AttachToDesktop\\AttachToDesktop.csproj",
       "packagesPath": "C:\\Users\\Saku\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\Saku\\OneDrive\\Bureau\\wallpaper engine\\tools\\AttachToDesktop\\obj\\",
+      "outputPath": "C:\\Users\\Saku\\OneDrive\\Bureau\\xdock\\tools\\AttachToDesktop\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": ["C:\\Users\\Saku\\AppData\\Roaming\\NuGet\\NuGet.Config"],
       "originalTargetFrameworks": ["net6.0"],

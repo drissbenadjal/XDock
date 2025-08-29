@@ -1,6 +1,6 @@
 {
   "name": "xdock",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A dock for your applications",
   "main": "./out/main/index.js",
   "author": "Driss Benadjal",

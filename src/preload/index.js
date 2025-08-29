@@ -100,6 +100,17 @@ api.readFileAsDataUrl = async (filePath) => {
   }
 }
 
+// read file as utf8 text (useful for parsing .url files)
+api.readFileText = async (filePath) => {
+  try {
+    const s = await fs.promises.readFile(filePath, { encoding: 'utf8' })
+    return s
+  } catch (e) {
+    console.error('readFileText', e)
+    return null
+  }
+}
+
 api.onWallpaperVideoPath = (cb) => {
   try {
     electronAPI.ipcRenderer.on('wallpaper-video-path', (event, p) => cb(p))
@@ -113,6 +124,32 @@ api.applyDockSettings = async (settings) => {
     return await electronAPI.ipcRenderer.invoke('apply-dock-settings', settings)
   } catch (e) {
     console.error('applyDockSettings', e)
+    return null
+  }
+}
+
+api.applyDockApps = async (apps) => {
+  try {
+    return await electronAPI.ipcRenderer.invoke('apply-dock-apps', apps)
+  } catch (e) {
+    console.error('applyDockApps', e)
+    return null
+  }
+}
+
+api.onDockApps = (cb) => {
+  try {
+    electronAPI.ipcRenderer.on('dock-apps', (event, apps) => cb(apps))
+  } catch (e) {
+    console.error('onDockApps', e)
+  }
+}
+
+api.windowControl = async (action) => {
+  try {
+    return await electronAPI.ipcRenderer.invoke('window-control', action)
+  } catch (e) {
+    console.error('windowControl', e)
     return null
   }
 }

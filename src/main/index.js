@@ -42,7 +42,6 @@ let updateIntervalHandle = null
 try {
   // require here to avoid bundling issues in environments where it's not needed
   // electron-updater is present in package.json, but require safely
-  // eslint-disable-next-line global-require
   const updater = require('electron-updater')
   autoUpdater = updater && updater.autoUpdater ? updater.autoUpdater : null
   if (autoUpdater) {
@@ -52,7 +51,7 @@ try {
       /* ignore */
     }
   }
-} catch (e) {
+} catch {
   console.debug('electron-updater not available')
 }
 
@@ -98,7 +97,7 @@ if (autoUpdater) {
   autoUpdater.on('download-progress', (progress) =>
     console.log('autoUpdater: download-progress', progress && progress.percent)
   )
-  autoUpdater.on('update-downloaded', (info) => {
+  autoUpdater.on('update-downloaded', () => {
     try {
       console.log('autoUpdater: update-downloaded, will quit and install now')
       // quit and install automatically
@@ -191,19 +190,76 @@ function createWindow() {
     } catch (err) {
       console.error('mainWindow.show failed', err)
     }
-    // Try to attach the main window to the desktop (behind other windows)
-    try {
-      if (attachWindowToDesktop) {
-        console.log('attachWindowToDesktop: helper found for main window, calling...')
-        const ok = attachWindowToDesktop(mainWindow)
-        console.log('attachWindowToDesktop (main) result=', ok)
-      } else {
-        console.log(
-          'attachWindowToDesktop: no helper available for main window; window will remain normal (not forced behind).'
-        )
+    // Ensure the main window stays behind other windows.
+    // Prefer native attach helper when available; otherwise use a fallback that
+    // toggles always-on-top to try to reset z-order. Also remove focus so the
+    // window doesn't stay on top when it accidentally receives focus.
+    const forceMainWindowBehind = () => {
+      try {
+        if (attachWindowToDesktop) {
+          try {
+            console.log('attachWindowToDesktop: helper found for main window, calling...')
+            const ok = attachWindowToDesktop(mainWindow)
+            console.log('attachWindowToDesktop (main) result=', ok)
+          } catch {
+            console.error('attachWindowToDesktop call failed for main window')
+          }
+        } else {
+          // Fallback: toggle always-on-top briefly to influence z-order.
+          try {
+            mainWindow.setAlwaysOnTop(true, 'screen-saver')
+            setTimeout(() => {
+              try {
+                mainWindow.setAlwaysOnTop(false)
+              } catch {
+                /* ignore */
+              }
+            }, 50)
+          } catch {
+            /* ignore */
+          }
+        }
+
+        try {
+          // If window somehow received focus, blur it so other apps keep focus
+          // and this window stays visually behind.
+          if (mainWindow && typeof mainWindow.blur === 'function') mainWindow.blur()
+        } catch {
+          /* ignore */
+        }
+      } catch (err) {
+        console.error('forceMainWindowBehind failed', err)
       }
-    } catch (err) {
-      console.error('attachWindowToDesktop call failed for main window', err)
+    }
+
+    // Call once now after load
+    try {
+      forceMainWindowBehind()
+    } catch {
+      /* ignore */
+    }
+
+    // If the window ever receives focus or is shown again, ensure it is pushed behind.
+    try {
+      mainWindow.on('focus', () => {
+        try {
+          forceMainWindowBehind()
+        } catch {
+          /* ignore */
+        }
+      })
+      mainWindow.on('show', () => {
+        // small delay to allow OS to bring to front then push it back
+        setTimeout(() => {
+          try {
+            forceMainWindowBehind()
+          } catch {
+            /* ignore */
+          }
+        }, 20)
+      })
+    } catch (e) {
+      console.error('attach focus/show listeners failed', e)
     }
   })
 
@@ -228,18 +284,21 @@ async function openSettingsWindow() {
     const { BrowserWindow } = require('electron')
     const win = new BrowserWindow({
       width: 900,
-      height: 640,
-      minWidth: 520,
-      minHeight: 420,
-      resizable: true,
-      minimizable: false,
-      maximizable: true,
+      height: 650,
+      minWidth: 900,
+      minHeight: 650,
+      maxWidth: 900,
+      maxHeight: 650,
+      resizable: false,
+      minimizable: true,
+      maximizable: false,
       modal: false,
-      show: true, // show immediately to avoid invisible window
+      show: true,
       autoHideMenuBar: true,
-      frame: true,
-      transparent: false,
-      backgroundColor: '#121212',
+      // Frameless + transparent so renderer can draw custom titlebar
+      frame: false,
+      transparent: true,
+      backgroundColor: '#00000000',
       title: 'XDock — Settings',
       webPreferences: {
         preload: join(__dirname, '../preload/index.js'),
@@ -297,9 +356,9 @@ async function openSettingsWindow() {
     }
 
     return { success: true }
-  } catch (e) {
-    console.error('openSettingsWindow failed', e)
-    return { success: false, error: String(e) }
+  } catch (err) {
+    console.error('openSettingsWindow failed', err)
+    return { success: false, error: String(err) }
   }
 }
 
@@ -402,8 +461,8 @@ app.whenReady().then(async () => {
                 // fallback to toDataURL
                 try {
                   return nimg2.toDataURL()
-                } catch (ee) {
-                  console.debug('url icon toDataURL failed', ee)
+                } catch (err) {
+                  console.error('forceMainWindowBehind failed', err)
                 }
               }
             } catch (e) {
@@ -411,8 +470,8 @@ app.whenReady().then(async () => {
                 const alt = nativeImage.createFromPath(resolved)
                 const buf = alt.toPNG()
                 return buf ? `data:image/png;base64,${buf.toString('base64')}` : null
-              } catch (ee) {
-                console.debug('url icon load fallback failed', ee)
+              } catch (e) {
+                console.error('loadURL for settings window failed', loadErr)
               }
             }
           }
@@ -431,8 +490,8 @@ app.whenReady().then(async () => {
           // fallback to toDataURL
           try {
             return nimg.toDataURL()
-          } catch (ee) {
-            console.error('toPNG/toDataURL both failed', ee)
+          } catch {
+            console.error('send dock-settings to settings window failed')
           }
         }
       } catch (err) {
@@ -448,8 +507,9 @@ app.whenReady().then(async () => {
         } catch (e) {
           try {
             return alt.toDataURL()
-          } catch (ee) {
-            console.error('nativeImage fallback toPNG/toDataURL failed', ee)
+          } catch {
+            console.error('openSettingsWindow failed')
+            return { success: false }
           }
         }
       } catch (e) {
@@ -611,6 +671,85 @@ app.whenReady().then(async () => {
     }
   })
 
+  // Apply dock apps list: persist to userData and broadcast to renderer windows
+  ipcMain.handle('apply-dock-apps', async (event, apps) => {
+    try {
+      const fs = require('fs')
+      const path = require('path')
+      const userData = app.getPath('userData')
+      const appsPath = path.join(userData, 'dock-apps.json')
+      try {
+        await fs.promises.writeFile(appsPath, JSON.stringify(apps || [], null, 2), 'utf8')
+      } catch (e) {
+        console.error('write dock-apps failed', e)
+      }
+
+      BrowserWindow.getAllWindows().forEach((w) => {
+        try {
+          w.webContents.send('dock-apps', apps)
+        } catch (e) {
+          /* ignore */
+        }
+      })
+      return { success: true }
+    } catch (e) {
+      console.error('apply-dock-apps handler failed', e)
+      return { success: false, error: String(e) }
+    }
+  })
+
+  // Window controls for frameless custom titlebar
+  ipcMain.handle('window-control', async (event, action) => {
+    try {
+      const bw = BrowserWindow.fromWebContents(event.sender)
+      if (!bw) return { success: false, error: 'no-window' }
+      switch ((action || '').toString()) {
+        case 'minimize':
+          try {
+            bw.minimize()
+          } catch {
+            /* ignore */
+          }
+          break
+        case 'maximize':
+          try {
+            bw.maximize()
+          } catch {
+            /* ignore */
+          }
+          break
+        case 'unmaximize':
+          try {
+            bw.unmaximize()
+          } catch {
+            /* ignore */
+          }
+          break
+        case 'toggle-max':
+          try {
+            if (bw.isMaximized()) bw.unmaximize()
+            else bw.maximize()
+          } catch {
+            /* ignore */
+          }
+          break
+        case 'close':
+          try {
+            bw.close()
+          } catch {
+            /* ignore */
+          }
+          break
+        default:
+          break
+      }
+      return { success: true }
+    } catch (err) {
+      console.error('window-control handler failed', err)
+      return { success: false, error: String(err) }
+    }
+  })
+
   // Create a wallpaper window that plays a local video file
   ipcMain.handle('create-wallpaper-window', async (event, videoPath, options = {}) => {
     try {
@@ -713,6 +852,30 @@ app.whenReady().then(async () => {
 
   // Create system tray icon and menu so the app is accessible from the notification area
   try {
+    // Also try to load persisted apps list if present and send to renderer
+    try {
+      const fs = require('fs')
+      const path = require('path')
+      const userData = app.getPath('userData')
+      const appsPath = path.join(userData, 'dock-apps.json')
+      if (fs.existsSync(appsPath)) {
+        try {
+          const rawApps = await fs.promises.readFile(appsPath, 'utf8')
+          const parsedApps = JSON.parse(rawApps)
+          mainWindow.webContents.once('did-finish-load', () => {
+            try {
+              mainWindow.webContents.send('dock-apps', parsedApps)
+            } catch {
+              console.error('send dock-apps on startup failed')
+            }
+          })
+        } catch {
+          console.error('read persisted dock-apps failed')
+        }
+      }
+    } catch {
+      console.error('load persisted dock-apps flow failed')
+    }
     // prefer the bundled icon; create nativeImage if possible
     let trayIcon = null
     try {
