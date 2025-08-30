@@ -36,6 +36,40 @@ import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 
+// Prevent launching multiple instances. If a second instance is started,
+// focus the existing window and exit the new one.
+try {
+  const gotLock = app.requestSingleInstanceLock()
+  if (!gotLock) {
+    // Another instance is already running - quit this one
+    app.quit()
+  } else {
+    app.on('second-instance', () => {
+      try {
+        const wins = BrowserWindow.getAllWindows()
+        if (wins && wins.length > 0) {
+          const w = wins[0]
+          try {
+            if (w.isMinimized && w.isMinimized()) w.restore()
+          } catch (err) {
+            console.debug('restore window failed', err)
+          }
+          try {
+            w.show()
+            w.focus()
+          } catch (err) {
+            console.debug('focus/show window failed', err)
+          }
+        }
+      } catch (err) {
+        console.debug('second-instance handler failed', err)
+      }
+    })
+  }
+} catch (err) {
+  console.debug('requestSingleInstanceLock failed', err)
+}
+
 // Auto-updater (optional)
 let autoUpdater = null
 let updateIntervalHandle = null
